@@ -3,7 +3,7 @@
 % The function 16*(x-0.5)^2*(y-0.5)^2
 % Boundary values set in the matrix
 
-function [B,K,M,ubdy,uhat] = setupmat(h,bdy_set,objective,plots)
+function [B,K,M,ubdy,uhat] = setupmat(h,bdy_set,objective,plots,permute)
 
 N=1/h;
 % objective = 1;          % 1 for biquadratic peak
@@ -165,5 +165,9 @@ b = b;%M(:,bdy_set.dirn)*ubdy;
 
 % create right hand side
 
-B = [a;b;c];
- 
+switch permute
+    case '123'
+        B = [a;b;c];
+    case '231'
+        B = [b;c;a]
+end

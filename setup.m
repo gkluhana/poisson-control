@@ -20,10 +20,10 @@ switch def_setup.type
 end
 [def_soln] = set_def_soln(prob_setup);
 
-def_soln.method = 'bpcg';           % bpcg, minres, backslash, gmres, ppcg  
-def_soln.kmethod = 'gmg';           % stiffness matrix approximation:
+def_soln.method = 'backslash';           % bpcg, minres, backslash, gmres, ppcg  
+def_soln.kmethod = 'bslash';           % stiffness matrix approximation:
                                     % gmg, bslash (amg -- if hsl mi20 installed)
-def_soln.mmethod = 'chebit';        % mass matrix approximation:
+def_soln.mmethod = 'bslash';        % mass matrix approximation:
                                     % chebit, bslash
 def_soln.gmgpre = 3;                % no of pre smoothing steps for mgrid (int >= 0)
 def_soln.gmgpost = 0;               % no of post smoothing steps for mgrid (int >= 0)
@@ -35,8 +35,7 @@ cd ..
 
 fprintf('GMG...\n')
 [Wg,iter,t2] = consolve(A,b,prob_setup,def_soln,def_setup);
-F = Wg(1:prob_setup.nu);
-U = Wg(prob_setup.nu+1:prob_setup.nu+prob_setup.ny);
+[F,U] = extractFU(Wg,def_setup,prob_setup);
 
 nu = prob_setup.nu;
 ny = prob_setup.ny;

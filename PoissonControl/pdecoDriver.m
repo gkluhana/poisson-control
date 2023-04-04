@@ -51,7 +51,7 @@ switch def_setup.bc
         bdy_set.bdn = unique([bdy_set.dirn;bdy_set.neun]);
         bdy_set.dbynodes = [1:N+1,N+2:2:3*N];
 end
-[b K M ubdy uhat]=setupmat(h,bdy_set,def_setup.ob,def_setup.plots);
+[b K M ubdy uhat]=setupmat(h,bdy_set,def_setup.ob,def_setup.plots,def_setup.permute);
 prob_setup.yelt = 'q1';
 prob_setup.uelt = 'q1';
 prob_setup.dim = 2;
@@ -63,8 +63,15 @@ l=length(M);
 prob_setup.nu = length(M); % size of control
 prob_setup.ny = length(K); % size of state
 
-A = [def_setup.beta*M sparse(l,l) -M;...                           
-    sparse(l,l) M K';...           
-    -M K sparse(l,l)];                  
 
+switch def_setup.permute
+    case '123'
+        A = [def_setup.beta*M sparse(l,l) -M;...                           
+        sparse(l,l) M K';...           
+        -M K sparse(l,l)];
+    case '231'
+        A = [M K' sparse(l,l);...                           
+        K sparse(l,l) -M;...           
+        sparse(l,l) -M def_setup.beta*M ];
+end
 
