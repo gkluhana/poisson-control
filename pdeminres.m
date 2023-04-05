@@ -21,7 +21,18 @@ u = sparse(lb,1);
 % Kl = eK(1);
 % KL = eK(end);
 % Ml = eM(1);
-% ML = eM(end);
+% ML = eM(end);invM= inv(M);
+    S1 = K*invM*K';
+    
+    S2 = 2*def_setup.beta*M + M*inv(S1)*M;
+    
+    PD = [M sparse(l,l) sparse(l,l);...
+        sparse(l,l) S1 sparse(l,l);...
+        sparse(l,l) sparse(l,l) S2];
+    invPD = inv(PD);
+    PDinvA = invPD*A;
+    eigPDinvA = sort(real(eig(full(PDinvA))));
+
 % def_soln.DEL = (ML/Kl)^2;
 % def_soln.del = (Ml/KL)^2;
 
