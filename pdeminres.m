@@ -4,10 +4,17 @@ nu = prob_setup.nu;
 ny = prob_setup.ny;
 lb = 2*ny+nu;
 
+% '123' permutation
 % Mu = A(1:nu,1:nu);
 % My = A(nu+1:nu+ny,nu+1:nu+ny);
 % Muy = A(nu+ny+1:2*ny+nu,1:nu);
 % K = A(nu+ny+1:2*ny+nu,nu+1:nu+ny);
+
+% '231' permutation
+% M = A(1:nu,1:nu)
+% K = A(nu+1:ny+nu,1:nu)
+% Kt = A(1:nu,nu+1:ny+nu)
+% 2betaM = A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu)
 
 tic,
 
@@ -179,10 +186,10 @@ switch def_setup.permute
             case 'bslash'
                 %solve with (3,3) block of preconditioner: S2
                 % S2 = 2beta*M + M(KM^-1KT)^-1M
-                Minv = inv(A(1:nu,1:nu));
-                KMinvKt = A(nu+1:ny+nu,1:nu)*Minv*A(1:nu,nu+1:ny+nu);
-                S2 = A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu) + A(1:nu,1:nu)*inv(KMinvKt)*A(1:nu,1:nu);
-                zed3 = S2\v(nu+ny+1:end);
+                %Minv = inv(A(1:nu,1:nu));
+                %KMinvKt = A(nu+1:ny+nu,1:nu)*Minv*A(1:nu,nu+1:ny+nu);
+                %S2 = A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu) + A(1:nu,1:nu)*inv(KMinvKt)*A(1:nu,1:nu);
+                zed3 = (A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu) + A(1:nu,1:nu)*(A(nu+1:ny+nu,1:nu)*A(1:nu,1:nu)\A(1:nu,nu+1:ny+nu))\A(1:nu,1:nu))\v(nu+ny+1:end);
         end
 
 end
