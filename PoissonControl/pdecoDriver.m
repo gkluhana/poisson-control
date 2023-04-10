@@ -98,5 +98,4 @@ switch def_setup.eig
     yline(1.618,'--r')
     yline(1.8019,'r')
     legend('eigenvalues','-0.618','-1.618','0.4450','1','1.618','1.8019')
-    figure(1)
 end

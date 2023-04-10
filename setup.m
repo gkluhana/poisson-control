@@ -9,7 +9,7 @@ def_setup.pow  =5;
 
 switch def_setup.type
     case 'dist2d'
-        fprintf('Setting up the 2D distributed control problem...\n')
+        fprintf('Setting up the 2D distributed control problem with permutation %s...\n',def_setup.permute)
         [A,b,bdy_set,ubdy,uhat,def_setup,prob_setup] = pdecoDriver(def_setup);
     case 'dist3d'
         fprintf('Setting up the 3D distributed control problem...\n')
@@ -24,6 +24,7 @@ def_soln.method = 'minres';           % bpcg, minres, backslash, gmres, ppcg
 def_soln.kmethod = 'bslash';           % stiffness matrix approximation:
                                     % gmg, bslash (amg -- if hsl mi20 installed)
 def_soln.mmethod = 'bslash';        % mass matrix approximation:
+def_soln.dropbeta= 'true';          % drop beta term in second schur complement of '231' permutation
                                     % chebit, bslash
 def_soln.gmgpre = 3;                % no of pre smoothing steps for mgrid (int >= 0)
 def_soln.gmgpost = 0;               % no of post smoothing steps for mgrid (int >= 0)
@@ -33,7 +34,7 @@ def_soln.scale = 0.9;               % scaling parameter for bpcg
 
 cd ..
 
-fprintf('GMG...\n')
+% fprintf('GMG...\n')
 [Wg,iter,t2] = consolve(A,b,prob_setup,def_soln,def_setup);
 [F,U] = extractFU(Wg,def_setup,prob_setup);
 

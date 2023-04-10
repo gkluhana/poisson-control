@@ -8,6 +8,7 @@ switch lower(prob_setup.eqn)
         def_soln.method = 'minres';    % method - minres, bpcg or ppcg  
         def_soln.mmethod = 'chebit';   % method for approx mass matrix
         def_soln.kmethod = 'amg';      % method for approx stiff matrix
+        def_soln.dropbeta = 'false';     %drop beta term in second schur complement of '231' permutation
         def_soln.tol = 1e-6;  % tolerance for method
         def_soln.conmethod = 'pblktri'; % method for constraint preconditioner
                                 % 'pblktri' for psycologically block

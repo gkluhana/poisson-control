@@ -189,7 +189,21 @@ switch def_setup.permute
                 %Minv = inv(A(1:nu,1:nu));
                 %KMinvKt = A(nu+1:ny+nu,1:nu)*Minv*A(1:nu,nu+1:ny+nu);
                 %S2 = A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu) + A(1:nu,1:nu)*inv(KMinvKt)*A(1:nu,1:nu);
-                zed3 = (A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu) + A(1:nu,1:nu)*(A(nu+1:ny+nu,1:nu)*A(1:nu,1:nu)\A(1:nu,nu+1:ny+nu))\A(1:nu,1:nu))\v(nu+ny+1:end);
+
+                switch lower(def_soln.dropbeta)
+                    case 'false'
+                        %keep 2betaM: form S2 then do backslash
+                        zed3 = (A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu) + A(1:nu,1:nu)*(A(nu+1:ny+nu,1:nu)*A(1:nu,1:nu)\A(1:nu,nu+1:ny+nu))\A(1:nu,1:nu))\v(nu+ny+1:end);
+                    case 'true'
+                        %drop 2betaM term, solve with M, then * with K then solve with M then
+                        %* with Kt then solve again with M .. m
+                        % This one doesn't seem to work... why?
+    
+                        M = A(1:nu,1:nu); %(1,1) block
+                        Kt = A(1:nu,nu+1:ny+nu); %(1,2) block
+                        K = A(nu+1:ny+nu,1:nu); %(2,1) block
+                        zed3 = M\(K*(M\(Kt*(M\v(nu+ny+1:end)))));
+                end
         end
 
 end
