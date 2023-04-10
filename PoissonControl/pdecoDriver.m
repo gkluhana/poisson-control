@@ -63,7 +63,6 @@ l=length(M);
 prob_setup.nu = length(M); % size of control
 prob_setup.ny = length(K); % size of state
 
-keyboard
 switch def_setup.permute
     case '123'
         A = [def_setup.beta*M sparse(l,l) -M;...                           
@@ -76,7 +75,7 @@ switch def_setup.permute
 end
 
 % Generate exact diagonal preconditioner
-switch def_setup.precon
+switch def_setup.eig
     case 'exact'
     invM= inv(M);
     S1 = K*invM*K';
@@ -89,4 +88,15 @@ switch def_setup.precon
     invPD = inv(PD);
     PDinvA = invPD*A;
     eigPDinvA = sort(real(eig(full(PDinvA))));
+    figure
+    plot(eigPDinvA,'o')
+    ylim([-2,2])
+    yline(-0.618,'b')
+    yline(-1.618,'b')
+    yline(0.4450,'g')
+    yline(1,'--g')
+    yline(1.618,'--r')
+    yline(1.8019,'r')
+    legend('eigenvalues','-0.618','-1.618','0.4450','1','1.618','1.8019')
+    figure(1)
 end

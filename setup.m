@@ -20,7 +20,7 @@ switch def_setup.type
 end
 [def_soln] = set_def_soln(prob_setup);
 
-def_soln.method = 'backslash';           % bpcg, minres, backslash, gmres, ppcg  
+def_soln.method = 'minres';           % bpcg, minres, backslash, gmres, ppcg  
 def_soln.kmethod = 'bslash';           % stiffness matrix approximation:
                                     % gmg, bslash (amg -- if hsl mi20 installed)
 def_soln.mmethod = 'bslash';        % mass matrix approximation:
@@ -65,6 +65,7 @@ if strcmp(def_setup.type,'dist2d') == 1
 end
 
 if def_setup.plots == 1;
+    figure(2)
     u = full(reshape(Un,N+1,N+1));
     x=0:h:1;
     y=x;

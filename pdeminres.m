@@ -22,16 +22,16 @@ u = sparse(lb,1);
 % KL = eK(end);
 % Ml = eM(1);
 % ML = eM(end);invM= inv(M);
-    S1 = K*invM*K';
-    
-    S2 = 2*def_setup.beta*M + M*inv(S1)*M;
-    
-    PD = [M sparse(l,l) sparse(l,l);...
-        sparse(l,l) S1 sparse(l,l);...
-        sparse(l,l) sparse(l,l) S2];
-    invPD = inv(PD);
-    PDinvA = invPD*A;
-    eigPDinvA = sort(real(eig(full(PDinvA))));
+% S1 = K*invM*K';
+% 
+% S2 = 2*def_setup.beta*M + M*inv(S1)*M;
+% 
+% PD = [M sparse(l,l) sparse(l,l);...
+%     sparse(l,l) S1 sparse(l,l);...
+%     sparse(l,l) sparse(l,l) S2];
+% invPD = inv(PD);
+% PDinvA = invPD*A;
+% eigPDinvA = sort(real(eig(full(PDinvA))));
 
 % def_soln.DEL = (ML/Kl)^2;
 % def_soln.del = (Ml/KL)^2;
@@ -95,72 +95,100 @@ function z = presolve(A,v,prob_setup,def_soln,multdata,def_setup)
 nu = prob_setup.nu;
 ny = prob_setup.ny;
 lb = 2*ny+nu;
-
-switch lower(def_soln.mmethod)
-    case 'chebit'
-        if strcmp(prob_setup.eqn,'stokes')==1
-            nvel = prob_setup.nvel;
-            nvel2 = nvel/2;
-            np = prob_setup.np;
-            zed2a = chebsemiit2(A(nu+1:nu+nvel2,nu+1:nu+nvel2),v(nu+1:nu+nvel2),def_soln.velcheb,prob_setup.dim,prob_setup.velelt);
-            zed2b = chebsemiit2(A(nu+nvel2+1:nu+nvel,nu+nvel2+1:nu+nvel),v(nu+nvel2+1:nu+nvel),def_soln.velcheb,prob_setup.dim,prob_setup.velelt);
-            zed2c = chebsemiit2(A(nu+nvel+1:nu+nvel+np,nu+nvel+1:nu+nvel+np),v(nu+nvel+1:nu+nvel+np),def_soln.pcheb,prob_setup.dim,prob_setup.pelt);
-            zed2 = [zed2a;zed2b;zed2c];
-            zed1a = chebsemiit2(A(1:nu/2,1:nu/2),v(1:nu/2),def_soln.ycheb,prob_setup.dim,prob_setup.uelt);
-            zed1b = chebsemiit2(A(nu/2+1:nu,nu/2+1:nu),v(nu/2+1:nu),def_soln.ycheb,prob_setup.dim,prob_setup.uelt);
-            zed1 =[zed1a;zed1b];
-        else
-            zed1 = chebsemiit2(A(1:nu,1:nu),v(1:nu),def_soln.ucheb,prob_setup.dim,prob_setup.uelt);
-            zed2 = chebsemiit2(A(nu+1:nu+ny,nu+1:nu+ny),v(nu+1:nu+ny),def_soln.ycheb,prob_setup.dim,prob_setup.yelt);
+switch def_setup.permute
+    case '123'
+        switch lower(def_soln.mmethod)
+            case 'chebit'
+                if strcmp(prob_setup.eqn,'stokes')==1
+                    nvel = prob_setup.nvel;
+                    nvel2 = nvel/2;
+                    np = prob_setup.np;
+                    zed2a = chebsemiit2(A(nu+1:nu+nvel2,nu+1:nu+nvel2),v(nu+1:nu+nvel2),def_soln.velcheb,prob_setup.dim,prob_setup.velelt);
+                    zed2b = chebsemiit2(A(nu+nvel2+1:nu+nvel,nu+nvel2+1:nu+nvel),v(nu+nvel2+1:nu+nvel),def_soln.velcheb,prob_setup.dim,prob_setup.velelt);
+                    zed2c = chebsemiit2(A(nu+nvel+1:nu+nvel+np,nu+nvel+1:nu+nvel+np),v(nu+nvel+1:nu+nvel+np),def_soln.pcheb,prob_setup.dim,prob_setup.pelt);
+                    zed2 = [zed2a;zed2b;zed2c];
+                    zed1a = chebsemiit2(A(1:nu/2,1:nu/2),v(1:nu/2),def_soln.ycheb,prob_setup.dim,prob_setup.uelt);
+                    zed1b = chebsemiit2(A(nu/2+1:nu,nu/2+1:nu),v(nu/2+1:nu),def_soln.ycheb,prob_setup.dim,prob_setup.uelt);
+                    zed1 =[zed1a;zed1b];
+                else
+                    zed1 = chebsemiit2(A(1:nu,1:nu),v(1:nu),def_soln.ucheb,prob_setup.dim,prob_setup.uelt);
+                    zed2 = chebsemiit2(A(nu+1:nu+ny,nu+1:nu+ny),v(nu+1:nu+ny),def_soln.ycheb,prob_setup.dim,prob_setup.yelt);
+                end
+            case 'bslash'
+                %solve with (1,1) block of preconditioner: M
+                zed1 = A(1:nu,1:nu)\v(1:nu);
+                %solve with (2,2) block of preconditioner: S1                
+                zed2 =A(nu+1:nu+ny,nu+1:nu+ny)\v(1+nu:nu+ny);
         end
-    case 'bslash'
-        zed1 = A(1:nu,1:nu)\v(1:nu);
-        zed2 =A(nu+1:nu+ny,nu+1:nu+ny)\v(1+nu:nu+ny);
+        switch lower(def_soln.kmethod)
+            case 'gmg'
+                if strcmp(prob_setup.eqn,'advdiff')==1
+                    zed3a = sparse(ny,1);
+                    for i = 1:def_soln.vcyc
+                        zed3a = mgvcyc_sd1(A(nu+ny+1:2*ny+nu,nu+1:nu+ny),v(nu+ny+1:end),multdata,zed3a,multdata(1).pow,multdata(1).spre,multdata(1).spost,multdata(1).dim);
+                    end
+                    zed3b = A(nu+1:nu+ny,nu+1:nu+ny)*zed3a;
+                    zed3 = sparse(ny,1);
+                    for i = 1:def_soln.vcyc
+                        zed3 = mgvcyc_sd2(A(nu+1:nu+ny,nu+ny+1:2*ny+nu),zed3b,multdata,zed3,multdata(1).pow,multdata(1).spost,multdata(1).spre,multdata(1).dim);
+                    end
+                else
+                    
+                    zed3a = sparse(ny,1);
+                    for i = 1:def_soln.vcyc
+                        zed3a = mgvcyc(A(nu+ny+1:2*ny+nu,nu+1:nu+ny),v(nu+ny+1:end),multdata,zed3a,multdata(1).pow,multdata(1).spre,multdata(1).spost,multdata(1).dim);
+                    end
+                    zed3b = A(nu+1:nu+ny,nu+1:nu+ny)*zed3a;
+                    zed3 = sparse(ny,1);
+                    for i = 1:def_soln.vcyc
+                        zed3 = mgvcyc(A(nu+ny+1:2*ny+nu,nu+1:nu+ny),zed3b,multdata,zed3,multdata(1).pow,multdata(1).spost,multdata(1).spre,multdata(1).dim);
+                    end
+                end
+            case 'amg'
+                zed3a = mi20_precondition(v(nu+ny+1:end));
+                zed3b = A(nu+1:nu+ny,nu+1:nu+ny)*zed3a;
+                zed3 = mi20_precondition(zed3b);
+            case 'bslash'
+                %solve with K:(3,2) then * with M (2,2) then solve with K^T
+                %(2,3)                
+                zed3 = A(nu+1:nu+ny,nu+ny+1:2*ny+nu)\(A(nu+1:nu+ny,nu+1:nu+ny)*(A(nu+ny+1:2*ny+nu,nu+1:nu+ny)\v(nu+ny+1:end)));
+            case 'stokes'
+                nvel = prob_setup.nvel;
+                np = prob_setup.np;
+                if def_soln.exactschur == 1;
+                    S0 = A(nu+ny+nvel+1:ny+nu+nvel+np,nu+1:nu+nvel)*(A(nu+ny+1:nu+ny+nvel, nu+1:nu+nvel)\A(nu+1:nu+nvel,nu+ny+nvel+1:ny+nu+nvel+np));
+                    %keyboard
+                else
+                    S0 = A(nu+nvel+1:nu+nvel+np,nu+nvel+1:nu+nvel+np)*def_soln.alp/prob_setup.delta;
+                end
+                zed3a = stokesapprox(A(nu+ny+1:2*ny+nu,nu+1:nu+ny),v(nu+ny+1:end),S0,def_soln,prob_setup);
+                zed3b = A(nu+1:nu+ny,nu+1:nu+ny)*zed3a;
+                zed3 = stokesapproxt(A(nu+ny+1:2*ny+nu,nu+1:nu+ny),zed3b,S0,def_soln,prob_setup);       
+        end
+    case '231'
+        switch lower(def_soln.mmethod)
+            case 'bslash'
+                %solve with (1,1) block of preconditioner: M
+                zed1 = A(1:nu,1:nu)\v(1:nu);
+                %solve with (2,2) block of preconditioner: S1: solve with K
+                %(2,1)
+                %then * with M (1,1) then solve with K^T (1,2)
+                zed2 = A(1:nu,nu+1:ny+nu)\(A(1:nu,1:nu)*(A(nu+1:ny+nu,1:nu)\v(1+nu:nu+ny)));
+        end
+        switch lower(def_soln.kmethod)
+            case 'bslash'
+                %solve with (3,3) block of preconditioner: S2
+                % S2 = 2beta*M + M(KM^-1KT)^-1M
+                Minv = inv(A(1:nu,1:nu));
+                KMinvKt = A(nu+1:ny+nu,1:nu)*Minv*A(1:nu,nu+1:ny+nu);
+                S2 = A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu) + A(1:nu,1:nu)*inv(KMinvKt)*A(1:nu,1:nu);
+                zed3 = S2\v(nu+ny+1:end);
+        end
+
 end
 
-switch lower(def_soln.kmethod)
-    case 'gmg'
-        if strcmp(prob_setup.eqn,'advdiff')==1
-            zed3a = sparse(ny,1);
-            for i = 1:def_soln.vcyc
-                zed3a = mgvcyc_sd1(A(nu+ny+1:2*ny+nu,nu+1:nu+ny),v(nu+ny+1:end),multdata,zed3a,multdata(1).pow,multdata(1).spre,multdata(1).spost,multdata(1).dim);
-            end
-            zed3b = A(nu+1:nu+ny,nu+1:nu+ny)*zed3a;
-            zed3 = sparse(ny,1);
-            for i = 1:def_soln.vcyc
-                zed3 = mgvcyc_sd2(A(nu+1:nu+ny,nu+ny+1:2*ny+nu),zed3b,multdata,zed3,multdata(1).pow,multdata(1).spost,multdata(1).spre,multdata(1).dim);
-            end
-        else
-            
-            zed3a = sparse(ny,1);
-            for i = 1:def_soln.vcyc
-                zed3a = mgvcyc(A(nu+ny+1:2*ny+nu,nu+1:nu+ny),v(nu+ny+1:end),multdata,zed3a,multdata(1).pow,multdata(1).spre,multdata(1).spost,multdata(1).dim);
-            end
-            zed3b = A(nu+1:nu+ny,nu+1:nu+ny)*zed3a;
-            zed3 = sparse(ny,1);
-            for i = 1:def_soln.vcyc
-                zed3 = mgvcyc(A(nu+ny+1:2*ny+nu,nu+1:nu+ny),zed3b,multdata,zed3,multdata(1).pow,multdata(1).spost,multdata(1).spre,multdata(1).dim);
-            end
-        end
-    case 'amg'
-        zed3a = mi20_precondition(v(nu+ny+1:end));
-        zed3b = A(nu+1:nu+ny,nu+1:nu+ny)*zed3a;
-        zed3 = mi20_precondition(zed3b);
-    case 'bslash'
-        zed3 = A(nu+1:nu+ny,nu+ny+1:2*ny+nu)\(A(nu+1:nu+ny,nu+1:nu+ny)*(A(nu+ny+1:2*ny+nu,nu+1:nu+ny)\v(nu+ny+1:end)));
-    case 'stokes'
-        nvel = prob_setup.nvel;
-        np = prob_setup.np;
-        if def_soln.exactschur == 1;
-            S0 = A(nu+ny+nvel+1:ny+nu+nvel+np,nu+1:nu+nvel)*(A(nu+ny+1:nu+ny+nvel, nu+1:nu+nvel)\A(nu+1:nu+nvel,nu+ny+nvel+1:ny+nu+nvel+np));
-            %keyboard
-        else
-            S0 = A(nu+nvel+1:nu+nvel+np,nu+nvel+1:nu+nvel+np)*def_soln.alp/prob_setup.delta;
-        end
-        zed3a = stokesapprox(A(nu+ny+1:2*ny+nu,nu+1:nu+ny),v(nu+ny+1:end),S0,def_soln,prob_setup);
-        zed3b = A(nu+1:nu+ny,nu+1:nu+ny)*zed3a;
-        zed3 = stokesapproxt(A(nu+ny+1:2*ny+nu,nu+1:nu+ny),zed3b,S0,def_soln,prob_setup);       
-end
+
+
 
 
 oo = 1;

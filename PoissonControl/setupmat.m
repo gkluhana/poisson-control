@@ -169,5 +169,5 @@ switch permute
     case '123'
         B = [a;b;c];
     case '231'
-        B = [b;c;a]
+        B = [b;c;a];
 end
