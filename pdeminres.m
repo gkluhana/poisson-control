@@ -124,7 +124,7 @@ switch def_setup.permute
             case 'bslash'
                 %solve with (1,1) block of preconditioner: M
                 zed1 = A(1:nu,1:nu)\v(1:nu);
-                %solve with (2,2) block of preconditioner: S1                
+                %solve with (2,2) block of preconditioner:                 
                 zed2 =A(nu+1:nu+ny,nu+1:nu+ny)\v(1+nu:nu+ny);
         end
         switch lower(def_soln.kmethod)
@@ -162,9 +162,8 @@ switch def_setup.permute
             case 'stokes'
                 nvel = prob_setup.nvel;
                 np = prob_setup.np;
-                if def_soln.exactschur == 1;
+                if def_soln.exactschur == 1
                     S0 = A(nu+ny+nvel+1:ny+nu+nvel+np,nu+1:nu+nvel)*(A(nu+ny+1:nu+ny+nvel, nu+1:nu+nvel)\A(nu+1:nu+nvel,nu+ny+nvel+1:ny+nu+nvel+np));
-                    %keyboard
                 else
                     S0 = A(nu+nvel+1:nu+nvel+np,nu+nvel+1:nu+nvel+np)*def_soln.alp/prob_setup.delta;
                 end
@@ -175,14 +174,31 @@ switch def_setup.permute
     case '231'
         switch lower(def_soln.mmethod)
             case 'bslash'
-                %solve with (1,1) block of preconditioner: M
+                % solve with (1,1) block of preconditioner: M
                 zed1 = A(1:nu,1:nu)\v(1:nu);
+            case 'chebit'
+                % iteration count rises from 20 -> 50
+                zed1 = chebsemiit2(A(1:nu,1:nu),v(1:nu),def_soln.ucheb,prob_setup.dim,prob_setup.uelt);
+
+        end
+        switch lower(def_soln.s1method)
+            case 'bslash'
                 %solve with (2,2) block of preconditioner: S1: solve with K
                 %(2,1)
                 %then * with M (1,1) then solve with K^T (1,2)
                 zed2 = A(1:nu,nu+1:ny+nu)\(A(1:nu,1:nu)*(A(nu+1:ny+nu,1:nu)\v(1+nu:nu+ny)));
+            case 'gmg'
+                    zed2a = sparse(ny,1);
+                    for i = 1:def_soln.vcyc
+                        zed2a = mgvcyc(A(nu+1:ny+nu,1:nu),v(1+nu:nu+ny),multdata,zed2a,multdata(1).pow,multdata(1).spre,multdata(1).spost,multdata(1).dim);
+                    end
+                    zed2b = A(1:nu,1:nu)*zed2a;
+                    zed2 = sparse(ny,1);
+                    for i = 1:def_soln.vcyc
+                        zed2 = mgvcyc(A(1:nu,nu+1:ny+nu),zed2b,multdata,zed2,multdata(1).pow,multdata(1).spost,multdata(1).spre,multdata(1).dim);
+                    end
         end
-        switch lower(def_soln.kmethod)
+        switch lower(def_soln.s2method)
             case 'bslash'
                 %solve with (3,3) block of preconditioner: S2
                 % S2 = 2beta*M + M(KM^-1KT)^-1M

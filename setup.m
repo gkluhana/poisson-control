@@ -21,16 +21,28 @@ end
 [def_soln] = set_def_soln(prob_setup);
 
 def_soln.method = 'minres';           % bpcg, minres, backslash, gmres, ppcg  
-def_soln.kmethod = 'bslash';           % stiffness matrix approximation:
+def_soln.kmethod = 'gmg';           % stiffness matrix approximation:
                                     % gmg, bslash (amg -- if hsl mi20 installed)
-def_soln.mmethod = 'bslash';        % mass matrix approximation:
-def_soln.dropbeta= 'true';          % drop beta term in second schur complement of '231' permutation
+def_soln.mmethod = 'chebit';        % mass matrix approximation:
                                     % chebit, bslash
+
 def_soln.gmgpre = 3;                % no of pre smoothing steps for mgrid (int >= 0)
 def_soln.gmgpost = 0;               % no of post smoothing steps for mgrid (int >= 0)
 def_soln.ucheb = 5;                 % no of cheb semi it steps for control mass matrix (int >= 0)
 def_soln.ycheb = 5;                 % no of cheb semi it steps for control mass matrix (int >= 0)
 def_soln.scale = 0.9;               % scaling parameter for bpcg
+
+switch def_setup.permute
+    case '231'
+        def_soln.dropbeta= 'false';         % drop beta term in second schur complement of '231' permutation
+        def_soln.mmethod = 'chebit';        % mass matrix approximation:
+                                            % chebit, bslash
+        def_soln.s1method= 'gmg';        % method for approximating S1
+                                            % gmg, bslash (amg -- if hsl mi20 installed)
+        def_soln.s2method= 'bslash';        % method for approximating S2
+        def_soln.ucheb = 5;                 % no of cheb semi it steps for control mass matrix (int >= 0)
+
+end
 
 cd ..
 
