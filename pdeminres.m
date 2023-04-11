@@ -29,16 +29,7 @@ u = sparse(lb,1);
 % KL = eK(end);
 % Ml = eM(1);
 % ML = eM(end);invM= inv(M);
-% S1 = K*invM*K';
-% 
-% S2 = 2*def_setup.beta*M + M*inv(S1)*M;
-% 
-% PD = [M sparse(l,l) sparse(l,l);...
-%     sparse(l,l) S1 sparse(l,l);...
-%     sparse(l,l) sparse(l,l) S2];
-% invPD = inv(PD);
-% PDinvA = invPD*A;
-% eigPDinvA = sort(real(eig(full(PDinvA))));
+
 
 % def_soln.DEL = (ML/Kl)^2;
 % def_soln.del = (Ml/KL)^2;
@@ -210,15 +201,31 @@ switch def_setup.permute
                     case 'false'
                         %keep 2betaM: form S2 then do backslash
                         zed3 = (A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu) + A(1:nu,1:nu)*(A(nu+1:ny+nu,1:nu)*A(1:nu,1:nu)\A(1:nu,nu+1:ny+nu))\A(1:nu,1:nu))\v(nu+ny+1:end);
+
+                        % '231' permutation
+                        % M = A(1:nu,1:nu)
+                        % K = A(nu+1:ny+nu,1:nu)
+                        % Kt = A(1:nu,nu+1:ny+nu)
+                        % 2betaM = A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu)
+                        
+
                     case 'true'
-                        %drop 2betaM term, solve with M, then * with K then solve with M then
-                        %* with Kt then solve again with M .. m
+                        %drop 2betaM term, solve with M, then * with Kt then solve with M then
+                        %* with K then solve again with M .. m
                         % This one doesn't seem to work... why?
     
-                        M = A(1:nu,1:nu); %(1,1) block
-                        Kt = A(1:nu,nu+1:ny+nu); %(1,2) block
-                        K = A(nu+1:ny+nu,1:nu); %(2,1) block
-                        zed3 = M\(K*(M\(Kt*(M\v(nu+ny+1:end)))));
+                         M = A(1:nu,1:nu); %(1,1) block
+                         Kt = A(1:nu,nu+1:ny+nu); %(1,2) block
+                         K = A(nu+1:ny+nu,1:nu); %(2,1) block
+%                         zed3 = M\(K*(M\(Kt*(M\v(nu+ny+1:end)))));
+                        
+%                         zed3a = (1/(2*def_setup.beta))*(M\v(nu+ny+1:end));
+%                         
+                        zed3b = Kt\(M*(K\v(nu+ny+1:end)));
+                        zed3b = (1/(4*def_setup.beta^2 + 2*def_setup.beta*0.0043))*zed3b;
+
+%                         zed3 = zed3a-zed3b;
+                        zed3 = zed3b;
                 end
         end
 

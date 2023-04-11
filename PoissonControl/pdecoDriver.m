@@ -73,6 +73,11 @@ switch def_setup.permute
         K sparse(l,l) -M;...           
         sparse(l,l) -M def_setup.beta*M ];
 end
+% keyboard
+% Kinv = inv(K);
+% Ktinv= inv(K');
+% trace(Ktinv*M*Kinv*M)
+
 
 % Generate exact diagonal preconditioner
 switch def_setup.eig
