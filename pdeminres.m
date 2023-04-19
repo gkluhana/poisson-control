@@ -163,6 +163,7 @@ switch def_setup.permute
                 zed3 = stokesapproxt(A(nu+ny+1:2*ny+nu,nu+1:nu+ny),zed3b,S0,def_soln,prob_setup);       
         end
     case '231'
+        % (1,1)
         switch lower(def_soln.mmethod)
             case 'bslash'
                 % solve with (1,1) block of preconditioner: M
@@ -172,6 +173,7 @@ switch def_setup.permute
                 zed1 = chebsemiit2(A(1:nu,1:nu),v(1:nu),def_soln.ucheb,prob_setup.dim,prob_setup.uelt);
 
         end
+        % S1
         switch lower(def_soln.s1method)
             case 'bslash'
                 %solve with (2,2) block of preconditioner: S1: solve with K
@@ -189,44 +191,38 @@ switch def_setup.permute
                         zed2 = mgvcyc(A(1:nu,nu+1:ny+nu),zed2b,multdata,zed2,multdata(1).pow,multdata(1).spost,multdata(1).spre,multdata(1).dim);
                     end
         end
-        switch lower(def_soln.s2method)
-            case 'bslash'
-                %solve with (3,3) block of preconditioner: S2
-                % S2 = 2beta*M + M(KM^-1KT)^-1M
-                %Minv = inv(A(1:nu,1:nu));
-                %KMinvKt = A(nu+1:ny+nu,1:nu)*Minv*A(1:nu,nu+1:ny+nu);
-                %S2 = A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu) + A(1:nu,1:nu)*inv(KMinvKt)*A(1:nu,1:nu);
+        % S2
+        % decide which term to drop
+         M = A(1:nu,1:nu); %(1,1) block
+         Kt = A(1:nu,nu+1:ny+nu); %(1,2) block
+         K = A(nu+1:ny+nu,1:nu); %(2,1) block
+        switch lower(def_soln.dropS2term)
+            case 'beta' %drop 2betaM
+          
+            switch lower(def_soln.s2method)
+                case 'bslash'
+                zed3 = M*(Kt\(M*(K\(M*v(nu+ny+1:end)))));
+                case 'gmg' %solve k with gmg
+            end
 
-                switch lower(def_soln.dropbeta)
-                    case 'false'
-                        %keep 2betaM: form S2 then do backslash
-                        zed3 = (A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu) + A(1:nu,1:nu)*(A(nu+1:ny+nu,1:nu)*A(1:nu,1:nu)\A(1:nu,nu+1:ny+nu))\A(1:nu,1:nu))\v(nu+ny+1:end);
-
-                        % '231' permutation
-                        % M = A(1:nu,1:nu)
-                        % K = A(nu+1:ny+nu,1:nu)
-                        % Kt = A(1:nu,nu+1:ny+nu)
-                        % 2betaM = A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu)
-                        
-
-                    case 'true'
-                        %drop 2betaM term, solve with M, then * with Kt then solve with M then
-                        %* with K then solve again with M .. m
-                        % This one doesn't seem to work... why?
+            case 's1' %drop S1 inverse term
+            switch lower(def_soln.s2method)
+                case 'bslash'
+                zed3 = (A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu)\v(nu+ny+1:end));
+                case 'chebit'
+                zed3 = chebsemiit2(A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu),v(nu+ny+1:2*ny+nu),def_soln.ucheb,prob_setup.dim,prob_setup.uelt);
     
-                         M = A(1:nu,1:nu); %(1,1) block
-                         Kt = A(1:nu,nu+1:ny+nu); %(1,2) block
-                         K = A(nu+1:ny+nu,1:nu); %(2,1) block
-%                         zed3 = M\(K*(M\(Kt*(M\v(nu+ny+1:end)))));
-                        
-%                         zed3a = (1/(2*def_setup.beta))*(M\v(nu+ny+1:end));
-%                         
-                        zed3b = Kt\(M*(K\v(nu+ny+1:end)));
-                        zed3b = (1/(4*def_setup.beta^2 + 2*def_setup.beta*0.0043))*zed3b;
+            end
+            
+            case 'none'
+            switch lower(def_soln.s2method)
+                case 'bslash'
+                    %solve with full S2
+                    zed3 = (A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu) + A(1:nu,1:nu)*(A(nu+1:ny+nu,1:nu)*A(1:nu,1:nu)\A(1:nu,nu+1:ny+nu))\A(1:nu,1:nu))\v(nu+ny+1:end);
+                case 'trace'
 
-%                         zed3 = zed3a-zed3b;
-                        zed3 = zed3b;
-                end
+            end
+
         end
 
 end

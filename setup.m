@@ -34,12 +34,21 @@ def_soln.scale = 0.9;               % scaling parameter for bpcg
 
 switch def_setup.permute
     case '231'
-        def_soln.dropbeta= 'true';         % drop beta term in second schur complement of '231' permutation
+  
         def_soln.mmethod = 'bslash';        % mass matrix approximation:
                                             % chebit, bslash
         def_soln.s1method= 'bslash';        % method for approximating S1
                                             % gmg, bslash (amg -- if hsl mi20 installed)
+
+        def_soln.dropS2term= 'beta';        % drop term in second schur complement of '231' permutation
+                                            % beta:drop beta*M term, 
+                                            % s1: drop term with s1 inverse, 
+                                            % none 
+
         def_soln.s2method= 'bslash';        % method for approximating S2
+                                            % chebit: solve M with chebit,
+                                            % 'gmg': solve K with gmg
+                                            % bslash: solve with \
         def_soln.ucheb = 5;                 % no of cheb semi it steps for control mass matrix (int >= 0)
 
 end
