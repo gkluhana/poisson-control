@@ -169,7 +169,7 @@ switch def_setup.permute
                 % solve with (1,1) block of preconditioner: M
                 zed1 = A(1:nu,1:nu)\v(1:nu);
             case 'chebit'
-                % iteration count rises from 20 -> 50
+                % iteration
                 zed1 = chebsemiit2(A(1:nu,1:nu),v(1:nu),def_soln.ucheb,prob_setup.dim,prob_setup.uelt);
 
         end
@@ -196,16 +196,20 @@ switch def_setup.permute
          M = A(1:nu,1:nu); %(1,1) block
          Kt = A(1:nu,nu+1:ny+nu); %(1,2) block
          K = A(nu+1:ny+nu,1:nu); %(2,1) block
-        switch lower(def_soln.dropS2term)
-            case 'beta' %drop 2betaM
-          
+         bM = A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu); %(3,3) block 
+        
+        switch lower(def_soln.s2term)
+            case 'identity' %drop 2betaM
             switch lower(def_soln.s2method)
                 case 'bslash'
-                zed3 = M*(Kt\(M*(K\(M*v(nu+ny+1:end)))));
-                case 'gmg' %solve k with gmg
+%                   zed3 = M*(Kt\(M*(K\(M*v(nu+ny+1:end))))); wrong!
+%                  zed3 = M\(K*(M\(Kt*(M\v(nu+ny+1:end))))); doesn't work!
+                zed3 = v(nu+ny+1:end);
+                case 'chebit' %solve k with gmg
+                zed3 = v(nu+ny+1:end);
             end
 
-            case 's1' %drop S1 inverse term
+            case 'beta' %drop S1 inverse term
             switch lower(def_soln.s2method)
                 case 'bslash'
                 zed3 = (A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu)\v(nu+ny+1:end));
@@ -214,11 +218,11 @@ switch def_setup.permute
     
             end
             
-            case 'none'
+            case 'full'
             switch lower(def_soln.s2method)
                 case 'bslash'
                     %solve with full S2
-                    zed3 = (A(nu+ny+1:2*ny+nu,nu+ny+1:2*ny+nu) + A(1:nu,1:nu)*(A(nu+1:ny+nu,1:nu)*A(1:nu,1:nu)\A(1:nu,nu+1:ny+nu))\A(1:nu,1:nu))\v(nu+ny+1:end);
+                    zed3 = (bM + M*((K*(M\Kt))\M))\v(nu+ny+1:end);
                 case 'trace'
 
             end
